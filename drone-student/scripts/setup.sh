@@ -137,6 +137,47 @@ if [ "$PLATFORM" == 'windows' ]; then
         exit 1
     fi
     SIM_DEST="${WIN_PROFILE_WSL}/UAVNeo-Simulator"
+
+    META_PROBE="${WIN_PROFILE_WSL}/.uavneo_metadata_probe"
+    rm -f "$META_PROBE" 2>/dev/null
+    touch "$META_PROBE" 2>/dev/null
+    if chmod 600 "$META_PROBE" 2>/dev/null; then
+        METADATA_ACTIVE=true
+    else
+        METADATA_ACTIVE=false
+    fi
+    rm -f "$META_PROBE" 2>/dev/null
+
+    if [ "$METADATA_ACTIVE" = false ]; then
+        if ! grep -q 'metadata' /etc/wsl.conf 2>/dev/null; then
+            printf '\n[automount]\noptions = "metadata"\n' | sudo tee -a /etc/wsl.conf >/dev/null
+        fi
+        echo ""
+        echo -e "\e[1;33m=========================================================================="
+        log "[ACTION REQUIRED] Restart WSL to continue installation"
+        echo "=========================================================================="
+        echo "The simulator installs onto your Windows drive, which needs the WSL"
+        echo "'metadata' mount option so file permissions work correctly. That option"
+        echo "has just been enabled in /etc/wsl.conf, but WSL only applies it on restart."
+        echo ""
+        echo "To continue, please:"
+        echo ""
+        echo "  1. Open PowerShell or Command Prompt on Windows and run:"
+        echo "         wsl --shutdown"
+        echo ""
+        echo "  2. Reopen your WSL terminal."
+        echo ""
+        echo "  3. Re-run this installer:"
+        echo "         bash ${SCRIPT_DIR}/setup.sh"
+        echo ""
+        echo "You can safely stop here — the installer has not set up any drone files"
+        echo "yet, and it will start fresh when you re-run it. This restart is needed"
+        echo "only once."
+        echo -e "==========================================================================\e[0m"
+        echo ""
+        log_silent "========== SETUP LOG END (RESTART REQUIRED) =========="
+        exit 0
+    fi
 else
     SIM_DEST="${NEO_DIR}/UAVNeo-Simulator"
 fi
@@ -254,7 +295,7 @@ if [ "$PLATFORM" == 'windows' ]; then
     # Single post-PPA apt call — triggers/ldconfig run once instead of three times.
     run_pipe "yes | sudo add-apt-repository ppa:deadsnakes/ppa"
     run_pipe "yes | sudo apt update"
-    run_pipe "yes | sudo apt install -y python3.9 python3.9-venv ffmpeg libsm6 libxext6"
+    run_pipe "yes | sudo apt install -y python3.9 python3.9-venv ffmpeg libsm6 libxext6 busybox"
 
     if ! command -v python3.9 &> /dev/null; then
         log ""
@@ -350,7 +391,7 @@ elif [ "$PLATFORM" == 'linux' ]; then
     # Single post-PPA apt call — triggers/ldconfig run once instead of three times.
     run_pipe "yes | sudo add-apt-repository ppa:deadsnakes/ppa"
     run_pipe "yes | sudo apt update"
-    run_pipe "yes | sudo apt install -y python3.9 python3.9-venv ffmpeg libsm6 libxext6"
+    run_pipe "yes | sudo apt install -y python3.9 python3.9-venv ffmpeg libsm6 libxext6 busybox"
 
     if ! command -v python3.9 &> /dev/null; then
         log ""
