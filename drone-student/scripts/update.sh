@@ -9,6 +9,17 @@ SIM_URL="https://github.com/MITUavNeo/UAVNeo-Simulator.git"
 LIB_URL="https://github.com/MITUavNeo/uav-neo-library.git"
 CURR_URL="https://github.com/MITUavNeo/uav-neo-"
 
+# Optional overrides for testing unreleased changes. Unset by default, so students
+# get each repo's default branch (main) from the URLs above.
+#   NEO_LABS_REF / NEO_LIB_REF  — clone this branch or tag instead of the default branch.
+#   NEO_LABS_URL / NEO_LIB_URL  — clone from a different remote or a local path (use a
+#                                 file:// URL, e.g. file:///home/you/uav-neo-summer-course-labs)
+#                                 to test committed local changes without pushing.
+LABS_REF="${NEO_LABS_REF:-}"
+LIB_REF="${NEO_LIB_REF:-}"
+LABS_URL_OVERRIDE="${NEO_LABS_URL:-}"
+LIB_URL_OVERRIDE="${NEO_LIB_URL:-}"
+
 # Get the full path of the current script
 SCRIPT_PATH=$(readlink -f "$0" 2>/dev/null || echo "$(cd "$(dirname "$0")"; pwd)/$(basename "$0")")
 
@@ -54,9 +65,12 @@ run_cmd() {
 # Refresh library from upstream; safe unprompted since students never edit library/ (unlike labs/).
 sync_library() {
     cd "$SCRIPT_DIR"/..
-    rm -rf library
+    rm -rf library uav-neo-library
+    local lib_src="${LIB_URL_OVERRIDE:-${LIB_URL}}"
+    [ -n "$LIB_URL_OVERRIDE" ] && log "[override] library source: ${lib_src}"
+    [ -n "$LIB_REF" ] && log "[override] library branch: ${LIB_REF}"
     log "Cloning library..."
-    run_cmd git clone --depth 1 "${LIB_URL}"
+    run_cmd git clone --depth 1 ${LIB_REF:+--branch "$LIB_REF"} "${lib_src}" uav-neo-library
     mv uav-neo-library/library library
     rm -rf uav-neo-library
     if [ -f "${NEO_DIR}/drone-venv/bin/activate" ]; then
@@ -115,10 +129,13 @@ if [ "$FOLDER" == 'labs' ]; then
                 # Go one folder back from scripts directory
                 cd "$SCRIPT_DIR"/..
                 # Remove existing labs folder
-                rm -rf labs
+                rm -rf labs "uav-neo-${CURRICULUM}-labs"
                 # Set up labs folder w/ correct formatting
+                labs_src="${LABS_URL_OVERRIDE:-${CURR_URL}${CURRICULUM}-labs}"
+                [ -n "$LABS_URL_OVERRIDE" ] && log "[override] labs source: ${labs_src}"
+                [ -n "$LABS_REF" ] && log "[override] labs branch: ${LABS_REF}"
                 log "Cloning ${CURRICULUM} labs..."
-                run_cmd git clone --depth 1 "${CURR_URL}${CURRICULUM}-labs"
+                run_cmd git clone --depth 1 ${LABS_REF:+--branch "$LABS_REF"} "${labs_src}" "uav-neo-${CURRICULUM}-labs"
                 mv "uav-neo-${CURRICULUM}-labs"/labs labs
                 rm -rf "uav-neo-${CURRICULUM}-labs"
                 cd "$SCRIPT_DIR"

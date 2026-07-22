@@ -5,6 +5,15 @@ SIM_URL="https://github.com/MITUavNeo/UAVNeo-Simulator.git"
 LIB_URL="https://github.com/MITUavNeo/uav-neo-library.git"
 CURR_URL="https://github.com/MITUavNeo/uav-neo-"
 
+# Optional overrides for testing unreleased changes. Unset by default, so students get each
+# repo's default branch (main) from the URLs above. See README "Testing unreleased changes".
+#   NEO_LABS_REF / NEO_LIB_REF  — clone this branch or tag instead of the default branch.
+#   NEO_LABS_URL / NEO_LIB_URL  — clone from a different remote or a local file:// path.
+LABS_REF="${NEO_LABS_REF:-}"
+LIB_REF="${NEO_LIB_REF:-}"
+LABS_URL_OVERRIDE="${NEO_LABS_URL:-}"
+LIB_URL_OVERRIDE="${NEO_LIB_URL:-}"
+
 SCRIPT_PATH=$(readlink -f "$0" 2>/dev/null || echo "$(cd "$(dirname "$0")"; pwd)/$(basename "$0")")
 SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
 DRONE_DIR=$(dirname "$SCRIPT_DIR")
@@ -195,12 +204,15 @@ SIM_CLONE_LOG="${LOG_DIR}/.clone_sim.tmp"
 LIB_CLONE_LOG="${LOG_DIR}/.clone_lib.tmp"
 LABS_CLONE_LOG="${LOG_DIR}/.clone_labs.tmp"
 
+[ -n "${LABS_URL_OVERRIDE}${LABS_REF}" ] && log "[override] labs from ${LABS_URL_OVERRIDE:-default repo} @ ${LABS_REF:-default branch}"
+[ -n "${LIB_URL_OVERRIDE}${LIB_REF}" ] && log "[override] library from ${LIB_URL_OVERRIDE:-default repo} @ ${LIB_REF:-default branch}"
+
 # --depth 1 implies --single-branch; -b PLATFORM still selects sim's branch.
 git clone --depth 1 --progress -b "${PLATFORM}" "${SIM_URL}" "${SIM_DEST}" >"${SIM_CLONE_LOG}" 2>&1 &
 SIM_PID=$!
-git clone --depth 1 --progress "${LIB_URL}" "${LIB_TMP}" >"${LIB_CLONE_LOG}" 2>&1 &
+git clone --depth 1 --progress ${LIB_REF:+--branch "$LIB_REF"} "${LIB_URL_OVERRIDE:-$LIB_URL}" "${LIB_TMP}" >"${LIB_CLONE_LOG}" 2>&1 &
 LIB_PID=$!
-git clone --depth 1 --progress "${CURR_URL}${CURRICULUM}-labs" "${LABS_TMP}" >"${LABS_CLONE_LOG}" 2>&1 &
+git clone --depth 1 --progress ${LABS_REF:+--branch "$LABS_REF"} "${LABS_URL_OVERRIDE:-${CURR_URL}${CURRICULUM}-labs}" "${LABS_TMP}" >"${LABS_CLONE_LOG}" 2>&1 &
 LABS_PID=$!
 
 # Spinner only on TTY; silent wait when piped.
@@ -332,6 +344,7 @@ if [ "$PLATFORM" == 'windows' ]; then
     echo "DRONE_ABSOLUTE_PATH=${DRONE_DIR}
 DRONE_IP=127.0.0.1
 DRONE_TEAM=student
+DRONE_USER=uav
 DRONE_CONFIG_LOADED=TRUE" > "${SCRIPT_DIR}/.config"
 
     log_silent "Writing .local_bashrc.sh..."
@@ -427,6 +440,7 @@ elif [ "$PLATFORM" == 'linux' ]; then
     echo "DRONE_ABSOLUTE_PATH=${DRONE_DIR}
 DRONE_IP=127.0.0.1
 DRONE_TEAM=student
+DRONE_USER=uav
 DRONE_CONFIG_LOADED=TRUE" > "${SCRIPT_DIR}/.config"
 
     log_silent "Writing .local_bashrc.sh..."
@@ -512,6 +526,7 @@ elif [ "$PLATFORM" == 'mac' ]; then
     echo "DRONE_ABSOLUTE_PATH=${DRONE_DIR}
 DRONE_IP=127.0.0.1
 DRONE_TEAM=student
+DRONE_USER=uav
 DRONE_CONFIG_LOADED=TRUE" > "${SCRIPT_DIR}/.config"
 
     log_silent "Writing .local_bashrc.sh..."

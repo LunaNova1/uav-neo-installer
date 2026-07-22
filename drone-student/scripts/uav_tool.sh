@@ -47,7 +47,10 @@ drone() {
     return 1
   fi
 
-  local DRONE_DESTINATION_PATH="/home/uav/jupyter_ws/${DRONE_TEAM}"
+  # SSH account on the drone (the Pi's login). Defaults to uav; override with DRONE_USER in
+  # .config for a drone set up under a different account.
+  local DRONE_USER="${DRONE_USER:-uav}"
+  local DRONE_DESTINATION_PATH="/home/${DRONE_USER}/jupyter_ws/${DRONE_TEAM}"
 
   case "$1" in
     cd)
@@ -56,7 +59,7 @@ drone() {
 
     connect)
       echo "Attempting to connect to drone (${DRONE_IP})..."
-      ssh -t uav@"$DRONE_IP" "cd ${DRONE_DESTINATION_PATH} && export DISPLAY=:0 && bash"
+      ssh -t "${DRONE_USER}@${DRONE_IP}" "cd ${DRONE_DESTINATION_PATH} && export DISPLAY=:0 && bash"
       ;;
 
     jupyter)
@@ -72,7 +75,7 @@ drone() {
       read -r -p "Are you sure? [y/N] " confirm
       if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         echo "Removing your team directory from your drone..."
-        ssh uav@"$DRONE_IP" "cd /home/uav/jupyter_ws/ && rm -rf ${DRONE_TEAM}"
+        ssh "${DRONE_USER}@${DRONE_IP}" "cd /home/${DRONE_USER}/jupyter_ws/ && rm -rf ${DRONE_TEAM}"
       else
         echo "Cancelled."
       fi
@@ -80,7 +83,7 @@ drone() {
 
     setup)
       echo "Creating your team directory (${DRONE_DESTINATION_PATH}) on your drone..."
-      ssh uav@"$DRONE_IP" mkdir -p "$DRONE_DESTINATION_PATH"
+      ssh "${DRONE_USER}@${DRONE_IP}" mkdir -p "$DRONE_DESTINATION_PATH"
       drone sync all
       ;;
 
@@ -217,7 +220,7 @@ drone() {
 
       echo "Backup location: $DRONE_ABSOLUTE_PATH/$backup_dir"
       echo "Downloading files now..."
-      rsync -avP uav@"$DRONE_IP":/home/uav/jupyter_ws "$DRONE_ABSOLUTE_PATH/$backup_dir"
+      rsync -avP "${DRONE_USER}@${DRONE_IP}:/home/${DRONE_USER}/jupyter_ws" "$DRONE_ABSOLUTE_PATH/$backup_dir"
 
       cd "$prev_dir" || return
       ;;
@@ -230,12 +233,12 @@ drone() {
       local valid_command=false
       if [ "$2" = "library" ] || [ "$2" = "all" ]; then
         echo "Copying your local copy of the drone library to your drone (${DRONE_IP})..."
-        rsync -azP --delete "$DRONE_ABSOLUTE_PATH"/library uav@"$DRONE_IP":"$DRONE_DESTINATION_PATH"
+        rsync -azP --delete "$DRONE_ABSOLUTE_PATH"/library "${DRONE_USER}@${DRONE_IP}:${DRONE_DESTINATION_PATH}"
         valid_command=true
       fi
       if [ "$2" = "labs" ] || [ "$2" = "all" ]; then
         echo "Copying your local copy of the drone labs to your drone (${DRONE_IP})..."
-        rsync -azP --delete "$DRONE_ABSOLUTE_PATH"/labs uav@"$DRONE_IP":"$DRONE_DESTINATION_PATH"
+        rsync -azP --delete "$DRONE_ABSOLUTE_PATH"/labs "${DRONE_USER}@${DRONE_IP}:${DRONE_DESTINATION_PATH}"
         valid_command=true
       fi
       if [ "$valid_command" = false ]; then

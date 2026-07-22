@@ -7,6 +7,7 @@ Template repository for native UAV Neo installation on local computer
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Updating](#updating)
+- [Deploying to the drone (real hardware)](#deploying-to-the-drone-real-hardware)
 - [Troubleshooting](#troubleshooting)
   - [Connection diagnostics](#connection-diagnostics)
   - [Setup log files](#setup-log-files)
@@ -216,6 +217,74 @@ bash uav-neo-installer/drone-student/scripts/update.sh
 You will be prompted to select which component to update (labs, library, or sim). A post-update check will verify everything is working correctly.
 
 **Note:** Updating labs will replace your existing labs folder. Back up any work before running the update.
+
+### Testing unreleased changes (branch or fork)
+
+`setup.sh` and `update.sh` clone the labs and library from each repo's **default branch**
+(`main`). To test changes that are not on `main` yet, set these environment variables before
+running either script. They are unset by default, so students always get `main`.
+
+| Variable | Effect |
+|----------|--------|
+| `NEO_LABS_REF` / `NEO_LIB_REF` | Clone this branch or tag instead of the default branch. |
+| `NEO_LABS_URL` / `NEO_LIB_URL` | Clone from a different remote (a fork) or a local `file://` path instead of the canonical repo. |
+
+**A branch on the canonical GitHub repo** (the change must be pushed):
+
+```sh
+NEO_LABS_REF=feature/my-labs NEO_LIB_REF=feature/my-lib \
+  bash uav-neo-installer/drone-student/scripts/update.sh
+```
+
+**A fork on GitHub:**
+
+```sh
+NEO_LABS_URL=https://github.com/you/uav-neo-summer-course-labs.git NEO_LABS_REF=my-branch \
+  bash uav-neo-installer/drone-student/scripts/update.sh
+```
+
+**A local clone, no push needed** (clones committed local state; use a `file://` URL):
+
+```sh
+NEO_LABS_URL=file:///home/you/uav-neo-summer-course-labs NEO_LABS_REF=feature/my-labs \
+  bash uav-neo-installer/drone-student/scripts/update.sh
+```
+
+The labs and library are cloned independently, so set the `LABS` variables, the `LIB`
+variables, or both. `update.sh` updates one component per run; the overrides also apply to the
+automatic library resync at the end of a labs update. Uncommitted working-tree edits are not
+included — only committed state is cloned.
+
+---
+
+## Deploying to the drone (real hardware)
+
+The same lab code runs on the real drone. Deployment copies your `labs/` and `library/` to the
+Pi over SSH; the `drone` tool handles it.
+
+1. **Point at the Pi.** Edit `drone-student/scripts/.config` and set `DRONE_IP` to the drone's
+   address and `DRONE_TEAM` to your team name, then reload (`source ~/.bashrc` or a new
+   terminal). The SSH account defaults to `uav`; set `DRONE_USER` in `.config` if your drone
+   uses a different login. The tool connects as `<DRONE_USER>@<DRONE_IP>` and deploys to
+   `/home/<DRONE_USER>/jupyter_ws/<DRONE_TEAM>`.
+2. **First time:** `drone setup` — creates your team directory on the Pi and does an initial
+   `drone sync all`.
+3. **After each change:** `drone sync all` (or `drone sync labs` / `drone sync library`) —
+   rsyncs your local `labs/` and `library/` to the Pi. Sync `library` too, so the drone runs
+   the same library version as your simulator.
+4. **Run it:** `drone connect` (SSH into the Pi), then `python3 <path>/main.py`. There is no
+   `-s` flag, so `create_drone()` uses the real-drone backend instead of the simulator.
+
+Handled outside this installer, on the Pi or by the flight crew:
+
+- The ROS 2 flight stack must be running on the Pi (`teleop.launch.py`), and the Pi's own
+  tooling selects which synced library Python loads.
+- A **safety pilot** arms the drone and switches it to **OFFBOARD** to hand control to your
+  program; switching out is the abort. Nothing moves until then.
+- For position/waypoint flights, lower the PX4 `MPC_*` speed limits in QGroundControl first so
+  the drone is safe indoors.
+
+See `labs/flights/README.md` in the labs repo for the flight-day roles and per-flight steps.
 
 ---
 
