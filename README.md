@@ -272,7 +272,11 @@ Pi over SSH; the `drone` tool handles it.
 3. **After each change:** `drone sync all` (or `drone sync labs` / `drone sync library`) —
    rsyncs your local `labs/` and `library/` to the Pi. Sync `library` too, so the drone runs
    the same library version as your simulator.
-4. **Run it:** `drone connect` (SSH into the Pi), then `python3 <path>/main.py`. There is no
+4. **First flight on a drone (and after any update):** run the labs' pre-flight checks —
+   `python3 labs/diagnostics/camera_check.py` (no flight; both cameras must stream), then
+   `python3 labs/diagnostics/takeoff_check.py` (a minimal climb-to-1-m-and-land; the safety
+   pilot arms + OFFBOARD). Fix anything they flag before running a lab.
+5. **Run it:** `drone connect` (SSH into the Pi), then `python3 <path>/main.py`. There is no
    `-s` flag, so `create_drone()` uses the real-drone backend instead of the simulator.
 
 Handled outside this installer, on the Pi or by the flight crew:
