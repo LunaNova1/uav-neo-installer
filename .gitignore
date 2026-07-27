@@ -10,8 +10,6 @@
 # Library cloned from uav-neo-library
 /drone-student/library/
 
-# Labs cloned from the selected curriculum repo
-/drone-student/labs/
 
 # Per-machine runtime and local config
 /drone-student/scripts/.config
