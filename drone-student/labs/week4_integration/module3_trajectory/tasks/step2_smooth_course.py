@@ -9,6 +9,7 @@ without stopping -- a racing line. Position is dead-reckoned from velocity, so i
 
 import drone_core
 import drone_utils as uav_utils
+import numpy as np
 
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
@@ -67,10 +68,15 @@ def hermite(p0, m0, p1, m1, s):
     """Cubic Hermite blend at fraction s in [0,1] between p0 (tangent m0) and p1 (tangent m1)."""
     ##################################
     #### START PUT CODE HERE #########
+    h00 = 2*s**3 - 3*s**2 + 1
+    h10 = s**3 - 2*s**2 + s
+    h01 = -2*s**3 + 3*s**2
+    h11 = s**3 - s**2
+    p = np.dot(h00(s),p0) + np.dot(h10(s), m0) + np.dot(h01(s),p1) + np.dot(h11(s),m1)
     # Combine the four Hermite basis functions of s with p0, m0, p1, m1 to return one
     # blended value. See the README ("Building a smooth path") for the four basis
     # functions h00, h10, h01, h11 and how they weight the endpoints and tangents.
-    result = p0
+    result = p
     ###### END PUT CODE HERE #########
     ##################################
     return result

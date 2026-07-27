@@ -75,6 +75,12 @@ def update(drone):
     pos_r, pos_f, vel_r, vel_f = trajectory(_t)
     ##################################
     #### START PUT CODE HERE #########
+    v_right   = vel_r + KP_POS * (pos_r - _x)
+    v_forward = vel_f + KP_POS * (pos_f - _z)
+    v_up = ALT_KP * (TARGET_HEIGHT - neo_lab.height(drone))
+    neo_lab.send_velocity(drone, v_right, v_up, v_forward)
+
+
 
     # GOAL: keep the drone on the moving target (pos_r, pos_f) by commanding a VELOCITY.
     #

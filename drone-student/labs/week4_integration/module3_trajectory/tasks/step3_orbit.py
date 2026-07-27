@@ -99,6 +99,13 @@ def update(drone):
     ##################################
     #### START PUT CODE HERE #########
 
+    v_right   = vel_r + KP_POS * (pos_r - _x)
+    v_forward = vel_f + KP_POS * (pos_f - _z)
+    v_up      = ALT_KP * (TARGET_HEIGHT - neo_lab.height(drone))
+    neo_lab.send_velocity(drone, v_right, v_up, v_forward)
+
+
+
     # GOAL: hold the circle from trajectory() -- constant distance RADIUS from the center.
     #
     # Command the trajectory's own (rotating) velocity, plus a correction that closes any

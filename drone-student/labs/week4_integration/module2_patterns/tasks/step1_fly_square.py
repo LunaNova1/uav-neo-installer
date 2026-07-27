@@ -50,6 +50,28 @@ def update(drone):
     ##################################
     #### START PUT CODE HERE #########
 
+    vel = drone.physics.get_linear_velocity()
+    dt = drone.get_delta_time()
+    
+    _timer += dt
+    _x += vel[2]*dt
+    _z += vel[0]*dt
+
+    if _wp > 3:
+        drone.flight.stop()
+        _done = True
+    else:
+        TARGET_FWD = WAYPOINTS[_wp][1]
+        TARGET_RIGHT = WAYPOINTS[_wp][0]
+        err_x = TARGET_FWD - _x
+        err_z = TARGET_RIGHT - _z
+        neo_lab.send_velocity(drone, KP_POS*err_z, neo_lab.altitude_hold_velocity(drone, TARGET_HEIGHT), KP_POS* err_x)
+        if abs(err_x) <= WP_TOL and abs(err_z) <= WP_TOL:
+            _wp +=1
+    
+        
+
+
     # GOAL: visit each corner in WAYPOINTS in order, then finish.
     #
     # Tools: drone.physics.get_linear_velocity(); drone.get_delta_time();

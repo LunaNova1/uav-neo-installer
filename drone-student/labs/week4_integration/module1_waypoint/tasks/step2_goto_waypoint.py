@@ -10,6 +10,7 @@ each: right, forward, and up.
 
 import drone_core
 import drone_utils as uav_utils
+import numpy as np
 
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
@@ -50,6 +51,24 @@ def update(drone):
         return True
     ##################################
     #### START PUT CODE HERE #########
+
+    dt = drone.get_delta_time()
+    vel = drone.physics.get_linear_velocity()
+    speed = np.linalg.norm(vel)
+    _x += vel[0]*dt
+    _z += vel[2]*dt
+
+    err_x = TARGET_FWD - _x
+    err_z = TARGET_RIGHT - _z
+    neo_lab.send_velocity(drone, KP_POS*err_z, neo_lab.altitude_hold_velocity(drone, TARGET_HEIGHT), KP_POS* err_x)
+
+    if abs(err_x) <= POS_TOL and abs(err_z) <= POS_TOL and speed <= SETTLE_SPEED:
+        _hold += dt
+        if _hold >= HOLD_TIME:
+            _done = True
+    else:
+        _hold = 0
+
 
     # GOAL: fly to (TARGET_RIGHT, TARGET_HEIGHT, TARGET_FWD) and hold there.
     #
